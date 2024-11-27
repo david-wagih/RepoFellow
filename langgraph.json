@@ -1,0 +1,9 @@
+{
+  "dockerfile_lines": [],
+  "graphs": {
+    "github_ai_assistant": "./github_ai_assistant.py:graph"
+  },
+  "env": "./.env",
+  "python_version": "3.12",
+  "dependencies": ["."]
+}
