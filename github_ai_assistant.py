@@ -3,7 +3,6 @@ import traceback
 from pydantic import BaseModel, Field
 from typing import Annotated, List, Optional, Dict, Set, Any, Union
 from typing_extensions import TypedDict
-import operator
 import re
 import os
 import base64
@@ -11,12 +10,11 @@ from pathlib import Path
 from io import BytesIO
 import tempfile
 from collections import Counter
+import certifi
 
 # LangChain imports
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, BaseMessage
 from langchain_openai import ChatOpenAI
-from langchain_community.document_loaders import PyPDFLoader, TextLoader
-from langchain_community.graphs import NetworkxEntityGraph
 from langchain_community.tools.tavily_search import TavilySearchResults
 
 # LangGraph imports
@@ -26,8 +24,6 @@ from langgraph.graph import END, MessagesState, START, StateGraph
 # Other dependencies
 from github import Github
 from graphviz import Digraph
-import networkx as nx
-import matplotlib.pyplot as plt
 
 # 2. Configuration
 llm = ChatOpenAI(model="gpt-3.5-turbo", temperature=0, max_tokens=1000)
@@ -87,6 +83,7 @@ class RepoAnalysisState(BaseState):
     query_type: str
     response: str
     analysis_complete: bool
+    error: Optional[str] = None
 
 
 class InterviewState(BaseState):
@@ -137,6 +134,19 @@ class RepositoryMemory:
         self.repositories: Dict[str, Dict[str, Any]] = {}
         self.max_cache_size = max_cache_size
         self.ttl_hours = ttl_hours
+        self._cleanup_timer = 0  # Add cleanup timer
+
+    def _cleanup_old_entries(self) -> None:
+        """Clean up expired entries"""
+        current_time = datetime.datetime.now()
+        expired_keys = [
+            key
+            for key, data in self.repositories.items()
+            if (current_time - data["last_analyzed"]).total_seconds()
+            > self.ttl_hours * 3600
+        ]
+        for key in expired_keys:
+            del self.repositories[key]
 
     def save_analysis(self, repo_url: str, analysis_data: Dict[str, Any]):
         if len(self.repositories) >= self.max_cache_size:
@@ -445,43 +455,97 @@ Please provide a GitHub repository URL when you're ready to analyze one."""
 # 9. Additional Query Handlers
 def handle_docs_query(state: RepoAnalysisState) -> Dict:
     """Generate documentation based on request"""
-    query = state.get("query", "")
-    repo_context = state.get("repo_context", {})
-    files = state.get("files", [])
+    try:
+        query = state.get("query", "")
+        repo_context = state.get("repo_context", {})
+        files = state.get("files", [])
+        repo_url = state.get("repo_url", "")
 
-    if not repo_context:
+        if not repo_context:
+            return {
+                "response": "Repository hasn't been analyzed yet. Please provide a repository URL first.",
+                "error": "No repository context available",
+            }
+
+        # Extract existing markdown content with error handling
+        try:
+            markdown_files = _extract_markdown_content(files)
+            existing_readme = markdown_files.get("README.md", "")
+        except Exception as e:
+            print(f"Error extracting markdown content: {e}")
+            existing_readme = ""
+
+        system_prompt = """Generate comprehensive documentation based on the repository analysis.
+        Focus on clarity, structure, and technical accuracy.
+        
+        Existing README Content:
+        {existing_readme}
+        
+        Repository Context:
+        {context}
+        
+        Files Available:
+        {files}
+        
+        Documentation Request:
+        {query}
+        
+        Format the response in markdown. Include:
+        1. Project overview
+        2. Key features
+        3. Installation instructions
+        4. Usage examples
+        5. Architecture overview
+        6. Contributing guidelines
+        
+        Keep the response focused and technical. Do not include any meta-commentary about the documentation itself."""
+
+        response = llm.invoke(
+            [
+                SystemMessage(
+                    content=system_prompt.format(
+                        existing_readme=existing_readme,
+                        context=str(repo_context),
+                        files="\n".join(f"- {f.path}" for f in files),
+                        query=query,
+                    )
+                ),
+                HumanMessage(content=query),
+            ]
+        )
+
+        new_content = response.content
+
+        # Create a PR with the new documentation
+        branch_name = f"docs/update-readme-{datetime.datetime.now().strftime('%Y%m%d-%H%M%S')}"
+        pr_result = _create_pull_request(
+            repo_url=repo_url,
+            branch_name=branch_name,
+            file_path="README.md",
+            content=new_content,  # Use just the generated content
+            commit_message="Update documentation with AI-generated content",
+        )
+
+        if pr_result["success"]:
+            # Keep meta-commentary only in the response, not in the PR content
+            return {
+                "response": f"I've generated new documentation and created a pull request. You can review and merge the changes here: {pr_result['pr_url']}",
+                "messages": state.get("messages", []) + [AIMessage(content=new_content)],
+                "pr_url": pr_result["pr_url"],
+                "generated_content": new_content
+            }
+        else:
+            return {
+                "response": f"I've generated new documentation but couldn't create a pull request (Error: {pr_result['error']}).",
+                "messages": state.get("messages", []) + [AIMessage(content=new_content)],
+                "generated_content": new_content
+            }
+
+    except Exception as e:
         return {
-            "response": "Repository hasn't been analyzed yet. Please provide a repository URL first."
+            "response": f"Error generating documentation: {str(e)}",
+            "error": str(e),
         }
-
-    system_prompt = """Generate comprehensive documentation based on the repository analysis.
-    Focus on clarity, structure, and technical accuracy.
-    
-    Repository Context:
-    {context}
-    
-    Files Available:
-    {files}
-    
-    Documentation Request:
-    {query}
-    
-    Format the response in markdown with appropriate sections and code examples."""
-
-    response = llm.invoke(
-        [
-            SystemMessage(
-                content=system_prompt.format(
-                    context=str(repo_context),
-                    files="\n".join(f"- {f.path}" for f in files),
-                    query=query,
-                )
-            ),
-            HumanMessage(content=query),
-        ]
-    )
-
-    return {"response": response.content}
 
 
 def handle_graph_query(state: RepoAnalysisState) -> Dict:
@@ -505,15 +569,16 @@ def handle_graph_query(state: RepoAnalysisState) -> Dict:
                 graph_data = RepoAnalysisTools.generate_architecture_diagram(files)
 
             if "error" not in graph_data:
+                response_text = (
+                    "Here's the requested visualization:\n\n"
+                    f"![Repository Visualization](data:image/{graph_data['image_format']};"
+                    f"base64,{graph_data['image_base64']})\n\n"
+                    "This diagram shows the "
+                    f"{'dependency relationships' if 'dependency' in query.lower() else 'architectural structure'} "
+                    "of the repository."
+                )
                 return {
-                    "response": f"""Here's the requested visualization:
-                    
-![Repository Visualization](data:image/{graph_data['image_format']};base64,{graph_data['image_base64']})
-
-This diagram shows the {
-                    'dependency relationships' if 'dependency' in query.lower() 
-                    else 'architectural structure'
-                } of the repository.""",
+                    "response": response_text,
                     "has_image": True,
                     "image_data": graph_data,
                 }
@@ -587,18 +652,18 @@ def handle_code_query(state: RepoAnalysisState) -> Dict:
     query = state.get("query", "")
     files = state.get("files", [])
 
-    system_prompt = """You are a code analysis expert. For the given query:
-    1. Find the most relevant code snippets
-    2. Present them in proper code blocks with language tags
-    3. Provide a brief, precise explanation below each snippet
-    4. If suggesting improvements, show them in separate code blocks
-    
-    Format your response as:
-    1. Code block with original code
-    2. Brief explanation (1-2 sentences)
-    3. Improvements (if any) in a separate code block
-    
-    Keep explanations concise and technical."""
+    system_prompt = (
+        "You are a code analysis expert. For the given query:\n"
+        "1. Find the most relevant code snippets\n"
+        "2. Present them in proper code blocks with language tags\n"
+        "3. Provide a brief, precise explanation below each snippet\n"
+        "4. If suggesting improvements, show them in separate code blocks\n\n"
+        "Format your response as:\n"
+        "1. Code block with original code\n"
+        "2. Brief explanation (1-2 sentences)\n"
+        "3. Improvements (if any) in a separate code block\n\n"
+        "Keep explanations concise and technical."
+    )
 
     # Filter relevant files based on query
     relevant_files = []
@@ -626,9 +691,12 @@ def handle_code_query(state: RepoAnalysisState) -> Dict:
 
 
 # 10. Repository Analysis Functions
-def analyze_repository(state: RepoAnalysisState) -> Dict:
+def analyze_repository(state: RepoAnalysisState) -> Dict[str, Any]:
     """Perform initial repository analysis with improved error handling"""
     try:
+        if not isinstance(state, dict):
+            raise ValueError("Invalid state object")
+
         files = state.get("files", [])
         if isinstance(files, dict) and "merge" in files:
             files = files["merge"]
@@ -637,11 +705,7 @@ def analyze_repository(state: RepoAnalysisState) -> Dict:
             return {
                 **state,
                 "error": "No files found in repository",
-                "messages": [
-                    AIMessage(
-                        content="No files found in repository. Please check if the repository is accessible and not empty."
-                    )
-                ],
+                "response": "No files found in repository. Please check if the repository is accessible and not empty.",
                 "analysis_complete": False,
             }
 
@@ -708,19 +772,22 @@ Repository is ready for queries. You can ask about:
         }
 
     except Exception as e:
-        error_msg = f"Error in repository analysis: {str(e)}"
-        print(error_msg)
         return {
             **state,
-            "messages": [AIMessage(content=error_msg)],
+            "error": str(e),
+            "response": f"An error occurred during analysis: {str(e)}",
             "analysis_complete": False,
-            "context": [error_msg],
         }
 
 
-def _analyze_file_structure(file: RepoFile) -> Dict:
+def _analyze_file_structure(file: RepoFile) -> Dict[str, List[str]]:
     """Analyze code structure of a file"""
-    structure = {"classes": [], "functions": [], "imports": [], "variables": []}
+    structure: Dict[str, List[str]] = {
+        "classes": [],
+        "functions": [],
+        "imports": [],
+        "variables": [],
+    }
 
     try:
         lines = file.content.split("\n")
@@ -1376,38 +1443,28 @@ class RepoVisualizer:
             return {"error": str(e)}
 
 
-def load_repository_node(state: RepoAnalysisState) -> Dict[str, Any]:
-    """Load repository with improved state tracking"""
+def load_repository_node(state: RepoAnalysisState) -> Dict:
+    """Load repository with improved error handling"""
     try:
-        # Check if repository is already loaded
-        if state.get("files") and state.get("analysis_complete"):
-            return state
+        # Ensure SSL certificates are properly configured
+        check_environment()
 
-        query = state.get("query", "")
-        repo_url = extract_repo_url(query)
-
+        # Get repo URL from query if not directly provided
+        repo_url = state.get("repo_url") or extract_repo_url(state.get("query", ""))
         if not repo_url:
             return {
-                **state,
-                "error": "No valid repository URL found",
-                "response": "Please provide a valid GitHub repository URL.",
+                "error": "No repository URL provided",
+                "response": "Please provide a GitHub repository URL to analyze.",
             }
 
-        # Load repository contents
-        github_token = os.getenv("GITHUB_TOKEN")
-        if not github_token:
-            return {
-                **state,
-                "error": "GitHub token not found",
-                "response": "GitHub token is required for repository access.",
-            }
-
-        github = Github(github_token)
-        parts = repo_url.split("github.com/")[-1].split("/")
-        owner, repo_name = parts[0], parts[1].replace(".git", "")
-
+        # Initialize GitHub client with error handling
         try:
-            repo = github.get_repo(f"{owner}/{repo_name}")
+            g = Github(os.getenv("GITHUB_TOKEN"))
+            parts = repo_url.split("github.com/")[-1].split("/")
+            owner, repo_name = parts[0], parts[1].replace(".git", "")
+            repo = g.get_repo(f"{owner}/{repo_name}")
+
+            # Load repository contents
             files = []
 
             def process_contents(contents):
@@ -1429,28 +1486,37 @@ def load_repository_node(state: RepoAnalysisState) -> Dict[str, Any]:
                             )
                     except Exception as e:
                         print(f"Error processing {content.path}: {str(e)}")
+                        continue
 
+            # Process all repository contents
             process_contents(repo.get_contents(""))
+
+            if not files:
+                return {
+                    "error": "No files found in repository",
+                    "response": "Repository appears to be empty or inaccessible.",
+                }
 
             return {
                 **state,
                 "files": files,
                 "repo_url": repo_url,
                 "response": f"Successfully loaded repository with {len(files)} files.",
+                "analysis_complete": False,
             }
 
         except Exception as e:
             return {
-                **state,
-                "error": f"Error loading repository: {str(e)}",
-                "response": "Failed to load repository. Please check the URL and try again.",
+                "error": f"GitHub authentication error: {str(e)}",
+                "response": "Failed to authenticate with GitHub. Please check your GITHUB_TOKEN.",
             }
 
     except Exception as e:
+        error_msg = f"Error loading repository: {str(e)}"
+        print(f"Detailed error: {traceback.format_exc()}")
         return {
-            **state,
-            "error": str(e),
-            "response": "An error occurred while loading the repository.",
+            "error": error_msg,
+            "response": f"Failed to load repository: {str(e)}. Please check your connection and try again.",
         }
 
 
@@ -1739,7 +1805,6 @@ def determine_recovery_options(error_msg: str) -> List[str]:
 
 def build_chat_graph() -> StateGraph:
     """Build the chat interaction graph"""
-    # Use the enhanced chat graph builder
     return build_enhanced_chat_graph()
 
 
@@ -2021,12 +2086,85 @@ def get_graph():
 graph = get_graph()
 
 
-def check_environment():
-    """Check if all required environment variables are set"""
-    required_vars = ["OPENAI_API_KEY", "GITHUB_TOKEN", "TAVILY_API_KEY"]
-    missing_vars = [var for var in required_vars if not os.getenv(var)]
+def check_environment() -> None:
+    """Check if all required environment variables are set and configure SSL certificates"""
+    # Set SSL certificate path using certifi
+    os.environ["SSL_CERT_FILE"] = certifi.where()
+    os.environ["REQUESTS_CA_BUNDLE"] = certifi.where()
+
+    required_vars = {
+        "OPENAI_API_KEY": "OpenAI API key for language model",
+        "GITHUB_TOKEN": "GitHub token for repository access",
+        "TAVILY_API_KEY": "Tavily API key for web search",
+        "LANGCHAIN_API_KEY": "LangChain API key for tracing",
+    }
+
+    missing_vars = {
+        var: desc for var, desc in required_vars.items() if not os.getenv(var)
+    }
 
     if missing_vars:
         raise EnvironmentError(
-            f"Missing required environment variables: {', '.join(missing_vars)}"
+            "Missing required environment variables:\n"
+            + "\n".join(f"- {var}: {desc}" for var, desc in missing_vars.items())
         )
+
+
+def _extract_markdown_content(files: List[RepoFile]) -> Dict[str, str]:
+    """Extract content from markdown files in the repository"""
+    markdown_files = {}
+    for file in files:
+        if file.path.lower().endswith(".md"):
+            markdown_files[file.path] = file.content
+    return markdown_files
+
+
+def _create_pull_request(
+    repo_url: str, branch_name: str, file_path: str, content: str, commit_message: str
+) -> Dict:
+    """Create a pull request with updated documentation"""
+    try:
+        github_token = os.getenv("GITHUB_TOKEN")
+        if not github_token:
+            raise ValueError("GitHub token not found")
+
+        g = Github(github_token)
+        parts = repo_url.split("github.com/")[-1].split("/")
+        owner, repo_name = parts[0], parts[1].replace(".git", "")
+        repo = g.get_repo(f"{owner}/{repo_name}")
+
+        # Get the default branch
+        default_branch = repo.default_branch
+        default_branch_ref = repo.get_git_ref(f"heads/{default_branch}")
+
+        # Create new branch
+        new_branch_ref = repo.create_git_ref(
+            ref=f"refs/heads/{branch_name}", sha=default_branch_ref.object.sha
+        )
+
+        try:
+            # Try to get existing file
+            existing_file = repo.get_contents(file_path, ref=branch_name)
+            repo.update_file(
+                file_path,
+                commit_message,
+                content,
+                existing_file.sha,
+                branch=branch_name,
+            )
+        except:
+            # File doesn't exist, create new one
+            repo.create_file(file_path, commit_message, content, branch=branch_name)
+
+        # Create pull request
+        pr = repo.create_pull(
+            title=commit_message,
+            body="Automated documentation update by GitHub Assistant",
+            head=branch_name,
+            base=default_branch,
+        )
+
+        return {"success": True, "pr_url": pr.html_url, "pr_number": pr.number}
+
+    except Exception as e:
+        return {"success": False, "error": str(e)}
