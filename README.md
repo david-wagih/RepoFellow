@@ -1,7 +1,7 @@
 # Github AI Assistant Documentation
 
 ## Project Overview
-The Github AI Assistant is an application designed to serve as an AI Agent that assists users in documenting, answering questions, and generating diagrams from a given repository URL. The AI Assistant leverages various functionalities to provide intelligent support for tasks related to Github repositories.
+The Github AI Assistant is an application designed to serve as an AI Agent that assists users in documenting, answering questions, and generating diagrams from a given repository URL. Leveraging various functionalities, the AI Assistant provides intelligent support for tasks related to Github repositories.
 
 ## Key Features
 - **Documentation Assistance**: The AI Agent helps in generating documentation for repositories.
