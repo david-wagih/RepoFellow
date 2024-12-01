@@ -12,6 +12,5 @@ trustcall
 langgraph-cli
 graphviz
 PyGithub
-# github
 networkx
 matplotlib
