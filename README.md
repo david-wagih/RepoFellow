@@ -1,8 +1,8 @@
-# Github AI Assistant Documentation
+# RepoFellow Documentation
 
 ## Project Overview
 
-The Github AI Assistant is an application designed to serve as an AI Agent that assists users in documenting, answering questions, and generating diagrams from a given repository URL. Leveraging various functionalities, the AI Assistant provides intelligent support for tasks related to Github repositories.
+RepoFellow is an application designed to serve as an AI Agent that assists users in documenting, answering questions, and generating diagrams from a given repository URL. Leveraging various functionalities, the AI Assistant provides intelligent support for tasks related to Github repositories.
 
 ## Key Features
 
@@ -16,7 +16,7 @@ The Github AI Assistant is an application designed to serve as an AI Agent that 
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/username/repository.git
+   git clone https://github.com/david-wagih/RepoFellow.git
    ```
 2. Install the required dependencies listed in `requirements.txt`:
    ```bash
@@ -41,13 +41,14 @@ The project consists of various classes and functions within the `repo_fellow.py
 
 ## Contributing Guidelines
 
-1. Fork the repository and create a new branch for your feature or bug fix.
-2. Make changes and ensure adherence to coding standards.
-3. Write tests for any new functionality added.
-4. Submit a pull request detailing the changes made and the problem solved.
+We welcome and encourage contributions! Please see our [CONTRIBUTING.md](CONTRIBUTING.md) guide for:
+
+- Detailed contribution process
+- Development setup instructions
+- Coding standards and style guide
+- Testing requirements
+- Pull request guidelines
+
+Before contributing, please also review our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 Your contributions are welcome and encouraged!
-
----
-
-This documentation provides an overview of the Github AI Assistant project, its features, installation instructions, usage examples, architecture details, and guidelines for contributing to the project.

@@ -1,6 +1,6 @@
 # Contributing to RepoFellow
 
-First off, thank you for considering contributing to GitHub AI Assistant! It's people like you that make it such a great tool for everyone.
+First off, thank you for considering contributing to RepoFellow! It's people like you that make it such a great tool for everyone.
 
 ## Code of Conduct
 
@@ -53,11 +53,6 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 2. Install dependencies:
    ```bash
    pip install -r requirements.txt
-   pip install -r requirements-dev.txt
-   ```
-3. Set up pre-commit hooks:
-   ```bash
-   pre-commit install
    ```
 
 ## Testing
