@@ -12,29 +12,83 @@ RepoFellow is an application designed to serve as an AI Agent that assists users
 - **Dependency Analysis**: Analyzes dependencies within the repository.
 - **Chat Interface**: Supports interaction through a chat interface for user queries.
 
-## Installation Instructions
+## Installation & Usage
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/david-wagih/RepoFellow.git
-   ```
-2. Install the required dependencies listed in `requirements.txt`:
+There are two ways to use RepoFellow:
+
+### Method 1: LangGraph Studio Desktop (Recommended for Development)
+
+1. Install dependencies:
+
    ```bash
    pip install -r requirements.txt
    ```
-3. Set up the necessary environment variables following the structure in `.env.example`.
 
-## Usage Examples
+2. Set up environment variables:
 
-1. Initialize the AI Assistant and provide a repository URL for analysis:
-   ```python
-   python repo_fellow
+   ```bash
+   cp .env.example .env
+   # Edit .env with your API keys and configuration
    ```
-2. Interact with the AI Assistant through the chat interface to ask questions or request documentation.
+
+3. Open LangGraph Studio Desktop application on your machine
+
+4. In LangGraph Studio:
+   - Navigate to File > Open Project
+   - Select the RepoFellow directory
+   - The graph will be automatically loaded and ready to use
+
+### Method 2: Docker Deployment
+
+1. Make sure you have Docker and Docker Compose installed.
+
+2. Clone and setup:
+
+   ```bash
+   git clone https://github.com/david-wagih/RepoFellow.git
+   cd RepoFellow
+   cp .env.example .env
+   # Edit .env with your configuration
+   ```
+
+3. Build the LangGraph image:
+
+   ```bash
+   langgraph build -t repo_fellow_image:latest .
+   ```
+
+4. Build and run the services:
+
+   ```bash
+   docker-compose up --build
+   ```
+
+   The `--build` flag ensures Docker Compose builds the image locally before starting the services.
+
+5. Access RepoFellow through any of these interfaces:
+   - **API Service**: `http://localhost:8123`
+   - **API Documentation**: `http://localhost:8123/docs`
+   - **LangSmith Studio Web Interface**: [LangSmith Studio](https://smith.langchain.com/studio/thread?baseUrl=http%3A%2F%2F127.0.0.1%3A8123)
+
+To stop the Docker containers:
+
+```bash
+docker-compose down
+```
+
+## Example Interactions
+
+Once connected, you can interact with RepoFellow using queries like:
+
+- "Analyze this repository: https://github.com/user/repo"
+- "Generate a diagram of the project structure"
+- "What are the main dependencies?"
+- "Explain the core classes and their relationships"
+- "Generate documentation for the API endpoints"
 
 ## Architecture Overview
 
-The project consists of various classes and functions within the `repo_fellow.py` script. Key components include:
+The project consists of various components:
 
 - **Classes**: Analyst, Perspectives, RepoFile, RepoMetadata, BaseState, RepoAnalysisState, InterviewState, ChatFlowState, GenerateAnalystsState, RepositoryMemory, RepoAnalysisTools, RepoVisualizer.
 - **Functions**: persona, save_analysis, extract_repo_url, analyze_dependencies, generate_architecture_diagram, handle_general_query, handle_docs_query, handle_graph_query, handle_code_query, analyze_repository, process_chat_message, build_main_graph, perform_web_search, create_dependency_graph, analyze_structure, generate_visualizations, validate_input_node, check_environment, and more.
