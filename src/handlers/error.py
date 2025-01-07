@@ -1,20 +1,24 @@
 import datetime
 from typing import Dict, Any, List
 from langchain_core.messages import AIMessage
-from models.state import ChatFlowState
+from models.state import CombinedState
 
-def handle_error(state: ChatFlowState) -> Dict[str, Any]:
+
+def handle_error(state: CombinedState) -> Dict[str, Any]:
     """Handle errors and provide recovery options"""
     try:
         if state.get("error"):
             error_msg = state["error"]
             recovery_options = determine_recovery_options(error_msg)
-            
+
             return {
                 **state,
-                "messages": state["messages"] + [
-                    AIMessage(content=f"An error occurred: {error_msg}\n\nI can try to:"),
-                    *[AIMessage(content=f"- {option}") for option in recovery_options]
+                "messages": state["messages"]
+                + [
+                    AIMessage(
+                        content=f"An error occurred: {error_msg}\n\nI can try to:"
+                    ),
+                    *[AIMessage(content=f"- {option}") for option in recovery_options],
                 ],
                 "pending_operations": recovery_options,
                 "error": None,
@@ -23,45 +27,54 @@ def handle_error(state: ChatFlowState) -> Dict[str, Any]:
     except Exception as e:
         return {
             **state,
-            "messages": state["messages"] + [
-                AIMessage(content=f"Critical error in error handler: {str(e)}")
-            ],
+            "messages": state["messages"]
+            + [AIMessage(content=f"Critical error in error handler: {str(e)}")],
             "error": str(e),
         }
 
-def recover_state_node(state: ChatFlowState) -> Dict[str, Any]:
+
+def recover_state_node(state: CombinedState) -> Dict[str, Any]:
     """Recover from errors and restore state"""
     try:
         if state.get("repo_context"):
             return {
                 **state,
                 "analysis_stage": "recovered",
-                "messages": state["messages"] + [
+                "messages": state["messages"]
+                + [
                     AIMessage(content="Successfully recovered previous analysis state.")
                 ],
             }
         return {
-            "conversation_id": str(datetime.datetime.now().timestamp()),
+            **state,
             "messages": [],
-            "current_context": {},
+            "context": [],
+            "files": [],
+            "error": None,
+            "response_ready": False,
+            "next_step": "determine_next",
+            "repo_url": None,
             "repo_context": None,
-            "source_type": "",
-            "source_path": "",
-            "analysis_type": "chat",
-            "generated_artifacts": {},
-            "waiting_for_repo": False,
-            "last_query": "",
-            "analysis_stage": "initial",
-            "pending_operations": [],
-            "analysis_depth": 0,
+            "query": None,
+            "query_type": None,
+            "response": None,
+            "analysis_complete": False,
+            "input_type": None,
+            "raw_input": None,
+            "requirements": None,
+            "user_stories": None,
+            "jira_sync_status": None,
+            "__interrupt": None,
+            "__human_response": None,
         }
     except Exception as e:
         return {**state, "error": f"Recovery failed: {str(e)}"}
 
+
 def determine_recovery_options(error_msg: str) -> List[str]:
     """Determine possible recovery options based on error message"""
     recovery_options = []
-    
+
     error_patterns = {
         "token": ["Refresh GitHub token", "Use alternative authentication"],
         "rate limit": ["Wait and retry", "Use different token"],
@@ -70,12 +83,12 @@ def determine_recovery_options(error_msg: str) -> List[str]:
         "timeout": ["Retry with longer timeout", "Analyze smaller portion"],
         "memory": ["Reduce analysis scope", "Process in batches"],
     }
-    
+
     for pattern, options in error_patterns.items():
         if pattern.lower() in error_msg.lower():
             recovery_options.extend(options)
-            
+
     if not recovery_options:
         recovery_options = ["Restart analysis", "Try different repository"]
-        
-    return recovery_options 
+
+    return recovery_options

@@ -14,3 +14,4 @@ graphviz
 PyGithub
 networkx
 matplotlib
+jira
