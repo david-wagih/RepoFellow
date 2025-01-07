@@ -1,47 +1,60 @@
-from typing import Dict, Any
+from typing import Dict, Any, Literal
 from langgraph.graph import StateGraph, END
-from handlers.query import handle_general_query
-from handlers.error import handle_error, recover_state_node
-from handlers.validation import validate_input_node
+from handlers.query import (
+    handle_general_query,
+    handle_code_query,
+    handle_visualization_query,
+    handle_greeting,
+)
+from handlers.router import determine_next_step
+from handlers.error import handle_error
 from handlers.repository import analyze_repository_node
 from models.state import RepoAnalysisState
 from utils.config import configure_environment
 
 
+def get_next_node(state: Dict) -> str:
+    """Determine the next node in the conversation flow"""
+    # Check for end condition
+    if state.get("query", "").lower() in {"goodbye", "bye", "exit", "quit", "end"}:
+        return END
+
+    # Check for error
+    if state.get("error"):
+        return "error_handler"
+
+    # Check if this is a response that needs to end
+    if state.get("response_ready"):
+        return END
+
+    # Get next step from state
+    return state.get("next_step", "general")
+
+
 def build_graph() -> StateGraph:
     """Build the main processing graph for LangGraph Studio"""
-    # Configure environment
     configure_environment()
-    
-    # Initialize graph with proper state type
+
+    # Initialize graph
     workflow = StateGraph(RepoAnalysisState)
 
     # Add nodes
-    workflow.add_node("validate_input", validate_input_node)
-    workflow.add_node("analyze_repository", analyze_repository_node)
-    workflow.add_node("handle_query", handle_general_query)
+    workflow.add_node("determine_next", determine_next_step)
+    workflow.add_node("greeting", handle_greeting)
+    workflow.add_node("general", handle_general_query)
+    workflow.add_node("code", handle_code_query)
+    workflow.add_node("visualization", handle_visualization_query)
+    workflow.add_node("analyze_repo", analyze_repository_node)
     workflow.add_node("error_handler", handle_error)
-    workflow.add_node("recover_state", recover_state_node)
 
-    # Define the flow
-    workflow.set_entry_point("validate_input")
-    
-    # Add edges with conditional routing
-    workflow.add_conditional_edges(
-        "validate_input",
-        lambda x: "error_handler" if x.get("error") else "analyze_repository"
-    )
-    
-    workflow.add_conditional_edges(
-        "analyze_repository",
-        lambda x: "error_handler" if x.get("error") else "handle_query"
-    )
-    
-    workflow.add_edge("handle_query", END)
-    workflow.add_edge("error_handler", "recover_state")
-    workflow.add_edge("recover_state", "validate_input")
+    # Set entry point
+    workflow.set_entry_point("determine_next")
+
+    # Add conditional edges from determine_next to handlers
+    workflow.add_conditional_edges("determine_next", get_next_node)
 
     return workflow.compile()
 
-# Export the compiled graph for LangGraph Studio
-graph = build_graph() 
+
+# Export the compiled graph
+graph = build_graph()
