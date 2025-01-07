@@ -7,6 +7,7 @@ from handlers.repository import analyze_repository_node
 from models.state import RepoAnalysisState
 from utils.config import configure_environment
 
+
 def build_graph() -> StateGraph:
     """Build the main processing graph for LangGraph Studio"""
     # Configure environment
