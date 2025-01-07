@@ -1,43 +1,40 @@
-# Python virtual environment
-venv/
-env/
-.env/
-.venv/
-
-
-# Python bytecode
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Distribution / packaging
-dist/
+*.so
+.Python
 build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
 *.egg-info/
+.installed.cfg
+*.egg
 
-# IDE specific files
+# Virtual Environment
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE
 .idea/
 .vscode/
 *.swp
 *.swo
 
-# Environment variables
-.env
-
-# Jupyter Notebook
-.ipynb_checkpoints
-
-# Testing
+# Project specific
+.langgraph/
+.pytest_cache/
 .coverage
 htmlcov/
-.pytest_cache/
-
-# System files
-.DS_Store
-Thumbs.db
-
-.env
-
-venv/bin/
-venv/etc/
-venv/lib/
