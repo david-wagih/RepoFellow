@@ -1,5 +1,5 @@
 from typing import Any, Dict, Set, List
-from ..models.schema import RepoFile
+from models.schema import RepoFile
 from collections import Counter
 from pathlib import Path
 

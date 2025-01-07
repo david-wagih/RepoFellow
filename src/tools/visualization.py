@@ -3,7 +3,7 @@ import tempfile
 from graphviz import Digraph
 from typing import Dict, Any, List
 from pathlib import Path
-from ..models.schema import RepoFile
+from models.schema import RepoFile
 
 class RepoVisualizer:
     @staticmethod

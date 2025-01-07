@@ -1,6 +1,6 @@
 from typing import Dict, Any, Union, Tuple
-from ..models.state import RepoAnalysisState
-from ..utils.helpers import extract_repo_url
+from models.state import RepoAnalysisState
+from utils.helpers import extract_repo_url
 
 def validate_input_node(state: RepoAnalysisState) -> Dict[str, Any]:
     """Validate input and prepare state for analysis"""

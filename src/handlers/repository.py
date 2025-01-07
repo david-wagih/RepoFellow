@@ -1,9 +1,9 @@
 from typing import Dict, Any
 from github import Github
 import os
-from ..models.state import RepoAnalysisState
-from ..models.schema import RepoFile, RepoMetadata
-from ..tools.analysis import RepoAnalysisTools
+from models.state import RepoAnalysisState
+from models.schema import RepoFile, RepoMetadata
+from tools.analysis import RepoAnalysisTools
 
 def analyze_repository_node(state: RepoAnalysisState) -> Dict[str, Any]:
     """Analyze repository and update state with results"""

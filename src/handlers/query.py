@@ -1,8 +1,8 @@
 from typing import Dict, Any, Optional
 import re
 from langchain_core.messages import AIMessage, SystemMessage, HumanMessage
-from ..utils.config import llm
-from ..models.state import RepoAnalysisState, ChatFlowState
+from utils.config import llm
+from models.state import RepoAnalysisState, ChatFlowState
 
 def handle_general_query(state: RepoAnalysisState) -> Dict:
     """Enhanced general query handler with web search integration"""

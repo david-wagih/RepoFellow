@@ -26,14 +26,18 @@ def build_graph() -> StateGraph:
     # Define the flow
     workflow.set_entry_point("validate_input")
     
-    # Add edges
-    workflow.add_edge("validate_input", "analyze_repository")
-    workflow.add_edge("analyze_repository", "handle_query")
-    workflow.add_edge("handle_query", END)
+    # Add edges with conditional routing
+    workflow.add_conditional_edges(
+        "validate_input",
+        lambda x: "error_handler" if x.get("error") else "analyze_repository"
+    )
     
-    # Add error handling
-    workflow.add_edge("validate_input", "error_handler", condition=lambda x: x.get("error"))
-    workflow.add_edge("analyze_repository", "error_handler", condition=lambda x: x.get("error"))
+    workflow.add_conditional_edges(
+        "analyze_repository",
+        lambda x: "error_handler" if x.get("error") else "handle_query"
+    )
+    
+    workflow.add_edge("handle_query", END)
     workflow.add_edge("error_handler", "recover_state")
     workflow.add_edge("recover_state", "validate_input")
 

@@ -1,7 +1,7 @@
 import datetime
 from typing import Dict, Any, List
 from langchain_core.messages import AIMessage
-from ..models.state import ChatFlowState
+from models.state import ChatFlowState
 
 def handle_error(state: ChatFlowState) -> Dict[str, Any]:
     """Handle errors and provide recovery options"""
