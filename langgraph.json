@@ -1,9 +1,10 @@
 {
   "dockerfile_lines": [],
   "graphs": {
-    "repo_fellow": "src.repo_fellow:graph"
+    "repo_fellow": "graph.builder:graph"
   },
   "env": "./.env",
   "python_version": "3.12",
-  "dependencies": ["."]
+  "dependencies": ["."],
+  "pythonpath": ["src"]
 }

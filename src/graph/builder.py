@@ -1,12 +1,12 @@
 from typing import Dict, Any
 from langgraph.graph import StateGraph, END
-from langgraph.prebuilt.state_graph import END
-from ..handlers.query import handle_general_query
-from ..handlers.error import handle_error, recover_state_node
-from ..handlers.validation import validate_input_node
-from ..handlers.repository import analyze_repository_node
-from ..models.state import RepoAnalysisState
-from ..utils.config import configure_environment
+from handlers.query import handle_general_query
+from handlers.error import handle_error, recover_state_node
+from handlers.validation import validate_input_node
+from handlers.repository import analyze_repository_node
+from models.state import RepoAnalysisState
+from utils.config import configure_environment
+
 
 def build_graph() -> StateGraph:
     """Build the main processing graph for LangGraph Studio"""
