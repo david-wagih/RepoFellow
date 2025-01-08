@@ -34,15 +34,22 @@ class RouterAgent(BaseAgent):
         business_keywords = [
             "requirement", "requirements", "user stor", "business need", 
             "functional", "non-functional", "specification", "feature",
-            "system should", "must have", "needs to", "analyze this"
+            "system should", "must have", "needs to", "analyze this",
+            "features", "capability", "capabilities"
         ]
         
-        if any(keyword in query for keyword in business_keywords):
+        needs_business_analysis = any(keyword in query for keyword in business_keywords)
+        
+        if needs_business_analysis:
+            # Don't set response_ready, let it flow to business agent
             return {
                 **state,
                 "next_agent": "business_agent",
                 "raw_input": state.get("query"),
-                "input_type": "text"
+                "input_type": "text",
+                "messages": state.get("messages", []) + [
+                    AIMessage(content="I'll help analyze your business requirements.")
+                ]
             }
         
         # Handle as general conversation
@@ -52,13 +59,14 @@ class RouterAgent(BaseAgent):
             "messages": state.get("messages", []) + [
                 AIMessage(content=self._generate_conversational_response(query))
             ],
-            "response_ready": True
+            "response_ready": True  # Only set response_ready for general conversation
         }
 
     def _generate_conversational_response(self, query: str) -> str:
         """Generate natural conversational responses"""
         if any(greeting in query for greeting in ["hi", "hello", "hey", "how are you"]):
-            return "Hello! I'm here to help you with requirements analysis and general questions. Feel free to share any business notes or requirements you'd like me to analyze!"
+            return ("Hello! I'm here to help you with requirements analysis and general questions. "
+                   "Feel free to share any business notes or requirements you'd like me to analyze!")
         
         if "help" in query or "what can you do" in query:
             return ("I can help you with:\n"
