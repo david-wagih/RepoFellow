@@ -1,56 +1,75 @@
 from typing import Dict, Any, List
 from langchain_core.messages import HumanMessage, AIMessage
 from .base import BaseAgent
-from tools.business_analysis import BusinessAnalysisTools
-from utils.jira_client import JiraClient
 
 
 class BusinessAgent(BaseAgent):
-    """Agent specialized in business analysis and user stories"""
+    """Agent specialized in analyzing business notes and generating requirements"""
 
     def get_system_prompt(self) -> str:
-        return """You are a skilled business analyst.
-        You can:
-        1. Analyze business requirements
-        2. Generate user stories
-        3. Analyze UI/UX designs
-        4. Sync with project management tools
-        Focus on delivering clear, actionable items."""
+        return """You are an expert business analyst specializing in requirements engineering.
+        
+        Your responsibilities:
+        1. Analyze business notes and extract requirements
+        2. Categorize requirements as functional or non-functional
+        3. Ensure requirements are:
+           - Clear and unambiguous
+           - Testable and measurable
+           - Feasible and realistic
+           - Properly prioritized
+        
+        Format requirements in a structured way:
+        - Functional Requirements (FR):
+          * FR1: The system shall...
+          * FR2: Users must be able to...
+        
+        - Non-Functional Requirements (NFR):
+          * NFR1: Performance - The system must...
+          * NFR2: Security - The system shall...
+          * NFR3: Usability - The interface must..."""
 
     def can_handle(self, state: Dict[str, Any]) -> bool:
-        input_type = state.get("input_type")
-        return input_type in ["text", "image"] and state.get("raw_input")
+        return bool(state.get("raw_input"))
 
     def _prepare_messages(self, state: Dict[str, Any]) -> List[HumanMessage]:
-        if state.get("input_type") == "image":
-            return [HumanMessage(content="Analyze the design and create user stories")]
-        return [HumanMessage(content=f"Requirements:\n{state.get('raw_input')}")]
+        return [HumanMessage(content=f"""
+        Analyze these business notes and generate clear requirements:
+        
+        {state.get('raw_input')}
+        
+        Generate both functional and non-functional requirements.
+        """)]
 
     def _process_response(self, state: Dict[str, Any], response: str) -> Dict[str, Any]:
-        try:
-            if state.get("input_type") == "image":
-                user_stories = BusinessAnalysisTools.analyze_design(
-                    state.get("raw_input")
-                )
-            else:
-                user_stories = BusinessAnalysisTools.analyze_requirements(
-                    state.get("raw_input")
-                )
+        return {
+            **state,
+            "response": response,
+            "messages": state.get("messages", []) + [
+                AIMessage(content="Based on your business notes, I've generated these requirements:\n\n"),
+                AIMessage(content=response)
+            ],
+            "requirements": self._parse_requirements(response),
+            "response_ready": True
+        }
 
-            return {
-                **state,
-                "user_stories": user_stories,
-                "messages": state.get("messages", [])
-                + [
-                    AIMessage(
-                        content=BusinessAnalysisTools.format_user_stories(user_stories)
-                    )
-                ],
-                "__interrupt": {
-                    "prompt": "Would you like to sync these stories to Jira? (yes/no)",
-                    "type": "confirmation",
-                    "data": {"stories": user_stories},
-                },
-            }
-        except Exception as e:
-            return {**state, "error": f"Business analysis failed: {str(e)}"}
+    def _parse_requirements(self, response: str) -> Dict[str, List[str]]:
+        """Parse requirements from response into structured format"""
+        functional = []
+        non_functional = []
+        
+        current_section = None
+        for line in response.split('\n'):
+            line = line.strip()
+            if "Functional Requirements" in line:
+                current_section = functional
+            elif "Non-Functional Requirements" in line:
+                current_section = non_functional
+            elif line.startswith(('FR', 'NFR', '*', '-')) and current_section is not None:
+                requirement = line.split(':', 1)[-1].strip()
+                if requirement:
+                    current_section.append(requirement)
+        
+        return {
+            "functional": functional,
+            "non_functional": non_functional
+        }

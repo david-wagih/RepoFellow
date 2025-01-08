@@ -12,8 +12,6 @@ class AgentRegistry:
     def __init__(self):
         self._agents: Dict[str, BaseAgent] = {
             "router": RouterAgent(),
-            "code_agent": CodeAgent(),
-            "docs_agent": DocumentationAgent(),
             "business_agent": BusinessAgent(),
         }
 
