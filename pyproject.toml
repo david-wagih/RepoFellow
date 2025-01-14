@@ -1,0 +1,15 @@
+[project]
+name = "local-code-assistant"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "pathlib>=1.0.1",
+    "pylint[json]>=3.3.3",
+    "requests>=2.32.3",
+    "rich>=13.7.0",
+    "setuptools>=75.8.0",
+    "tomli>=2.2.1",
+    "typer>=0.15.1",
+]

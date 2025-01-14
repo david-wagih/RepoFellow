@@ -1,0 +1,7 @@
+typer
+rich
+requests
+pathlib
+setuptools
+tomli
+pylint
