@@ -1,24 +1,30 @@
-"""Base agent class definition"""
-from typing import Dict, Any, List
+"""Base agent class with enhanced configuration support"""
 from abc import ABC, abstractmethod
+from typing import Dict, Any, List
 from langchain_core.messages import HumanMessage, SystemMessage
-from langchain_openai import ChatOpenAI
-from ..utils.config import configure_environment
+from ..config.config_manager import config_manager
+from ..config.prompts import get_prompt
+from ..utils.model_factory import ModelFactory
 
 class BaseAgent(ABC):
-    """Base class for all agents"""
+    """Enhanced base class for all agents"""
     
-    def __init__(self):
-        configure_environment()  # Ensure environment is configured
-        self.llm = ChatOpenAI(
-            model="gpt-3.5-turbo",
-            temperature=0.7,
+    def __init__(self, agent_type: str):
+        self.agent_type = agent_type
+        self.config = config_manager.get_agent_config(agent_type)
+        self.llm = ModelFactory.create_model_with_fallback(
+            self.config.primary_model,
+            self.config.fallback_model
         )
+        self.system_prompt = get_prompt(agent_type)
     
-    @abstractmethod
-    def get_system_prompt(self) -> str:
-        """Get the system prompt for this agent"""
-        pass
+    def refresh_config(self) -> None:
+        """Refresh agent configuration and model"""
+        self.config = config_manager.get_agent_config(self.agent_type)
+        self.llm = ModelFactory.create_model_with_fallback(
+            self.config.primary_model,
+            self.config.fallback_model
+        )
     
     @abstractmethod
     def can_handle(self, state: Dict[str, Any]) -> bool:
@@ -40,23 +46,19 @@ class BaseAgent(ABC):
         if not self.can_handle(state):
             return {
                 **state,
-                "error": f"Agent {self.__class__.__name__} cannot handle this request"
+                "error": f"Agent {self.config.name} cannot handle this request"
             }
         
         try:
-            # Prepare messages including system prompt
             messages = [
-                SystemMessage(content=self.get_system_prompt()),
+                SystemMessage(content=self.system_prompt),
                 *self._prepare_messages(state)
             ]
             
-            # Call LLM
             response = self.llm.invoke(messages).content
-            
-            # Process response
             return self._process_response(state, response)
         except Exception as e:
             return {
                 **state,
-                "error": f"Error in {self.__class__.__name__}: {str(e)}"
+                "error": f"Error in {self.config.name}: {str(e)}"
             } 

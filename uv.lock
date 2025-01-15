@@ -95,6 +95,24 @@ wheels = [
 ]
 
 [[package]]
+name = "anthropic"
+version = "0.43.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anyio" },
+    { name = "distro" },
+    { name = "httpx" },
+    { name = "jiter" },
+    { name = "pydantic" },
+    { name = "sniffio" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/e1/0a/973d2ac6c9f7d1be41829c7b878cbe399385b25cc2ebe80ad0eec9999b8c/anthropic-0.43.0.tar.gz", hash = "sha256:06801f01d317a431d883230024318d48981758058bf7e079f33fb11f64b5a5c1", size = 194826 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d7/88/ded3ba979a2218a448cbc1a1e762d998b92f30529452c5104b35b6cb71f8/anthropic-0.43.0-py3-none-any.whl", hash = "sha256:f748a703f77b3244975e1aace3a935840dc653a4714fb6bba644f97cc76847b4", size = 207867 },
+]
+
+[[package]]
 name = "anyio"
 version = "4.8.0"
 source = { registry = "https://pypi.org/simple" }
@@ -1141,6 +1159,21 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/18/35/2adb0693acc149e462bc0e7856ecd58096c285f66a78bc44fc2b8ae91ce0/langchain-0.3.14.tar.gz", hash = "sha256:4a5ae817b5832fa0e1fcadc5353fbf74bebd2f8e550294d4dc039f651ddcd3d1", size = 420409 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/d0/a8/0a8f868615b7a30636b1d15b718e3ea9875bf0dccced03583477c2372495/langchain-0.3.14-py3-none-any.whl", hash = "sha256:5df9031702f7fe6c956e84256b4639a46d5d03a75be1ca4c1bc9479b358061a2", size = 1009213 },
+]
+
+[[package]]
+name = "langchain-anthropic"
+version = "0.3.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "anthropic" },
+    { name = "defusedxml" },
+    { name = "langchain-core" },
+    { name = "pydantic" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/93/57/a4cd984afd45a6b7793178db4595914d8625b69382bbe51f18513c19f641/langchain_anthropic-0.3.1.tar.gz", hash = "sha256:4dc1b9a685d6b2a9e55231e4c92248bb7452b7821f6b64a5607737cdf8ba98ef", size = 20805 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/89/73/af53ffcb5262e8d16ca0b0d8b319b542f1cff78ba5ad1049e680bbcc16c8/langchain_anthropic-0.3.1-py3-none-any.whl", hash = "sha256:c95ca2e381798babdb8e55e5ed241342e0ea9bc2f15721cdbace87d23992d29e", size = 22325 },
 ]
 
 [[package]]
@@ -2246,6 +2279,7 @@ source = { editable = "." }
 dependencies = [
     { name = "graphviz" },
     { name = "jira" },
+    { name = "langchain-anthropic" },
     { name = "langchain-community" },
     { name = "langchain-core" },
     { name = "langchain-openai" },
@@ -2260,6 +2294,7 @@ dependencies = [
     { name = "pathlib" },
     { name = "pygithub" },
     { name = "pylint" },
+    { name = "python-dotenv" },
     { name = "requests" },
     { name = "rich" },
     { name = "setuptools" },
@@ -2274,6 +2309,7 @@ dependencies = [
 requires-dist = [
     { name = "graphviz", specifier = ">=0.20.3" },
     { name = "jira", specifier = ">=3.8.0" },
+    { name = "langchain-anthropic", specifier = ">=0.3.1" },
     { name = "langchain-community", specifier = ">=0.3.14" },
     { name = "langchain-core", specifier = ">=0.3.29" },
     { name = "langchain-openai", specifier = ">=0.2.14" },
@@ -2288,6 +2324,7 @@ requires-dist = [
     { name = "pathlib", specifier = ">=1.0.1" },
     { name = "pygithub", specifier = ">=2.5.0" },
     { name = "pylint", specifier = ">=3.3.3" },
+    { name = "python-dotenv", specifier = ">=1.0.0" },
     { name = "requests", specifier = ">=2.32.3" },
     { name = "rich", specifier = ">=13.7.0" },
     { name = "setuptools", specifier = ">=75.8.0" },

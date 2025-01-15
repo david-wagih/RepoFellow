@@ -26,19 +26,27 @@ services:
       retries: 5
       interval: 5s
   langgraph-api:
-    image: repo_fellow_image:latest
+    image: repofellow:latest
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - "8123:8000"
+    volumes:
+      - .:/app
+      - ~/.gitconfig:/home/repofellow/.gitconfig:ro
+      - ~/.ssh:/home/repofellow/.ssh:ro
     depends_on:
       langgraph-redis:
         condition: service_healthy
       langgraph-postgres:
         condition: service_healthy
     environment:
-      REDIS_URI: redis://langgraph-redis:6379
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
-      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
-      POSTGRES_URI: postgres://postgres:postgres@langgraph-postgres:5432/postgres?sslmode=disable
+      - REDIS_URI=redis://langgraph-redis:6379
+      - POSTGRES_URI=postgres://postgres:postgres@langgraph-postgres:5432/postgres?sslmode=disable
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - LANGSMITH_API_KEY=${LANGSMITH_API_KEY}
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - JIRA_SERVER=${JIRA_SERVER}
+      - JIRA_EMAIL=${JIRA_EMAIL}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN}

@@ -6,6 +6,7 @@ langsmith
 langchain-community
 langchain-core
 langchain-openai
+langchain_anthropic
 
 # CLI and UI
 typer

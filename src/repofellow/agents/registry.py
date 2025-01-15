@@ -2,6 +2,7 @@
 from typing import Dict, Type
 from .base import BaseAgent
 from .code import CodeAgent
+from .business import BusinessAgent
 from .cli_router import CLIRouterAgent
 
 class AgentRegistry:
@@ -11,6 +12,7 @@ class AgentRegistry:
         self._agents: Dict[str, BaseAgent] = {
             "router": CLIRouterAgent(),
             "code_agent": CodeAgent(),
+            "business_agent": BusinessAgent(),
         }
 
     def get_agent(self, agent_id: str) -> BaseAgent:
