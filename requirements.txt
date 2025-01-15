@@ -6,7 +6,7 @@ langsmith
 langchain-community
 langchain-core
 langchain-openai
-langchain_anthropic
+langchain-anthropic
 
 # CLI and UI
 typer
@@ -33,3 +33,4 @@ pathlib
 requests
 setuptools
 tomli
+python-dotenv>=1.0.0
