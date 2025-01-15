@@ -1,29 +1,24 @@
-"""Mappings between CLI commands and agent capabilities"""
+"""CLI command mappings configuration"""
 
 CLI_COMMAND_MAPPINGS = {
     "ask": {
+        "prompt_template": "Answer the following question about the codebase: {question}",
         "agent": "code_agent",
-        "capabilities": ["code_explanation", "documentation_search"],
-        "prompt_template": "Answer this question about the codebase: {question}"
-    },
-    "modify": {
-        "agent": "code_agent",
-        "capabilities": ["code_modification", "refactoring"],
-        "prompt_template": "Modify the code according to this instruction: {instruction}"
-    },
-    "check_quality": {
-        "agent": "code_agent",
-        "capabilities": ["code_analysis", "quality_check"],
-        "prompt_template": "Analyze code quality and provide detailed report"
+        "capabilities": ["code_understanding", "documentation"]
     },
     "analyze": {
-        "agent": "documentation_agent",
-        "capabilities": ["codebase_analysis", "visualization"],
-        "prompt_template": "Provide comprehensive analysis of the codebase"
+        "prompt_template": "Analyze the codebase and provide insights",
+        "agent": "analysis_agent",
+        "capabilities": ["code_analysis", "metrics"]
     },
-    "visualize": {
-        "agent": "documentation_agent",
-        "capabilities": ["diagram_generation", "architecture_visualization"],
-        "prompt_template": "Generate visual representation of the codebase"
+    "modify": {
+        "prompt_template": "Modify the code according to: {instruction}",
+        "agent": "modification_agent",
+        "capabilities": ["code_modification"]
+    },
+    "check_quality": {
+        "prompt_template": "Perform a code quality analysis",
+        "agent": "quality_agent",
+        "capabilities": ["code_quality", "linting"]
     }
 } 

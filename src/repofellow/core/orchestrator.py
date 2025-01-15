@@ -3,6 +3,7 @@ from typing import Dict, Any, Optional
 from pathlib import Path
 from rich.console import Console
 from rich.progress import Progress
+from rich.markdown import Markdown
 from .codebase import CodebaseContext
 from ..agents.registry import registry
 
@@ -16,13 +17,16 @@ class AssistantOrchestrator:
     def process_cli_command(self, command: str, args: Dict[str, Any]) -> Dict[str, Any]:
         """Process CLI command by converting it to agent-compatible state"""
         
+        # Build initial state with all necessary fields
         initial_state = {
             "messages": [],
             "context": [],
             "files": [],
             "query": self._build_query(command, args),
             "query_type": command,
-            "response_ready": False
+            "response_ready": False,
+            # Add command-specific arguments to state
+            **args
         }
         
         if 'path' in args:
@@ -53,7 +57,7 @@ class AssistantOrchestrator:
             progress.update(task, completed=True)
             return codebase.get_summary()
             
-    def format_response(self, state: Dict[str, Any]) -> str:
+    def format_response(self, state: Dict[str, Any]) -> str | Markdown:
         """Format agent response for CLI output"""
         if state.get("error"):
             return f"Error: {state['error']}"
@@ -63,6 +67,6 @@ class AssistantOrchestrator:
             artifacts = state["generated_artifacts"]
             if "diagram" in artifacts:
                 self.console.print("\nGenerated diagram:")
-                # Handle diagram display
+                # Handle diagram display logic here
                 
-        return response 
+        return Markdown(response) if isinstance(response, str) else response 

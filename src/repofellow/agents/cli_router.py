@@ -1,3 +1,4 @@
+"""CLI Router Agent implementation"""
 from typing import Dict, Any, List
 from langchain_core.messages import HumanMessage, AIMessage
 from .base import BaseAgent
@@ -17,18 +18,21 @@ class CLIRouterAgent(BaseAgent):
         Always choose the most appropriate handler based on command intent."""
     
     def can_handle(self, state: Dict[str, Any]) -> bool:
-        return state.get("query_type") in CLI_COMMAND_MAPPINGS
+        command_type = state.get("query_type", "")
+        return command_type in CLI_COMMAND_MAPPINGS
     
     def _prepare_messages(self, state: Dict[str, Any]) -> List[HumanMessage]:
         command = state.get("query_type", "")
-        query = state.get("query", "")
         mapping = CLI_COMMAND_MAPPINGS.get(command, {})
         
-        return [
-            HumanMessage(
-                content=mapping["prompt_template"].format(**state)
-            )
-        ]
+        # Format the template with state values, handling missing keys gracefully
+        try:
+            content = mapping["prompt_template"].format(**state)
+        except KeyError:
+            # If formatting fails, use the query directly
+            content = state.get("query", "No query provided")
+            
+        return [HumanMessage(content=content)]
     
     def _process_response(self, state: Dict[str, Any], response: str) -> Dict[str, Any]:
         command = state.get("query_type", "")
@@ -38,8 +42,7 @@ class CLIRouterAgent(BaseAgent):
         return {
             **state,
             "next_agent": next_agent,
-            "messages": state.get("messages", []) + [
-                AIMessage(content=response)
-            ],
-            "capabilities": mapping.get("capabilities", [])
+            "messages": state.get("messages", []) + [AIMessage(content=response)],
+            "capabilities": mapping.get("capabilities", []),
+            "response": response  # Add the response to the state
         } 

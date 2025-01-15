@@ -1,9 +1,6 @@
 """Main CLI application module"""
 import typer
-from rich.console import Console
 from .commands import ask, analyze, modify, quality
-from .ui.console import create_console
-from .ui.formatting import styled_header
 
 app = typer.Typer(
     name="repofellow",
@@ -12,8 +9,15 @@ app = typer.Typer(
     rich_markup_mode="rich",
 )
 
-# Register commands
-app.command()(ask.command)
-app.command()(analyze.command)
-app.command()(modify.command)
-app.command()(quality.command) 
+# Register commands correctly
+app.command(name="ask")(ask)
+app.command(name="analyze")(analyze)
+app.command(name="modify")(modify)
+app.command(name="quality")(quality)
+
+def main():
+    """Entry point for the CLI"""
+    app()
+
+if __name__ == "__main__":
+    main() 
