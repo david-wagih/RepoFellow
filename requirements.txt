@@ -1,7 +1,34 @@
+# Core dependencies
+langgraph
+langgraph-sdk
+langgraph-checkpoint-sqlite
+langsmith
+langchain-community
+langchain-core
+langchain-openai
+
+# CLI and UI
 typer
 rich
-requests
+
+# Code Analysis
+pylint
+graphviz
+
+# Data Processing
+networkx
+matplotlib
+notebook
+
+# API Integrations
+jira
+pygithub
+tavily-python
+wikipedia
+trustcall
+
+# Utilities
 pathlib
+requests
 setuptools
 tomli
-pylint

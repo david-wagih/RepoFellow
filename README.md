@@ -1,4 +1,4 @@
-# Local Code Assistant
+# RepoFellow
 
 Local Code Assistant is a command-line tool designed to help developers manage and analyze their Python projects more efficiently. It provides various commands to interact with your project, such as generating documentation, analyzing dependencies, and providing insights into the codebase.
 
@@ -24,6 +24,7 @@ pip install -r requirements.txt
 ```
 
 These dependencies include:
+
 - `pathlib`: For handling file system paths.
 - `tomli`: For parsing TOML files.
 - `setuptools`: For building and distributing Python packages.
@@ -36,20 +37,23 @@ These dependencies include:
 To install Local Code Assistant, follow these steps:
 
 1. **Clone the Repository**:
-    ```sh
-    git clone https://github.com/yourusername/local_code_assistant.git
-    cd local_code_assistant
-    ```
+
+   ```sh
+   git clone https://github.com/yourusername/local_code_assistant.git
+   cd local_code_assistant
+   ```
 
 2. **Install Dependencies**:
-    ```sh
-    pip install -r requirements.txt
-    ```
+
+   ```sh
+   pip install -r requirements.txt
+   ```
 
 3. **Run the Tool**:
-    ```sh
-    python main.py --help
-    ```
+
+   ```sh
+   python main.py --help
+   ```
 
 ## Usage Instructions with Examples
 
@@ -126,6 +130,8 @@ Contributions to Local Code Assistant are welcome! Please follow these guideline
 ## License Information
 
 Local Code Assistant is released under the [MIT License](LICENSE). See the `LICENSE` file for more details.
+
 ```
 
 This README provides a comprehensive overview of the project, its features, and how to use it. It also includes information on contributing to the project and its licensing.
+```
